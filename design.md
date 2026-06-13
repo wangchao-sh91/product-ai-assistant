@@ -2,21 +2,26 @@
 
 ## 1. 设计目标
 
-本设计面向“个人可独立完成、但足够体现 AI 应用工程深度”的目标，采用“全 Python 单后端模块化 + RAG + 多 Agent”的结构：
+本设计面向“个人可独立完成、但足够体现 AI 应用工程深度”的目标，采用“前后端分离 + Python 后端 2 到 3 服务 + RAG + 多 Agent”的结构：
 
-- Python/FastAPI 统一负责 API、用户会话、鉴权、AI 编排和外部系统集成
-- LangGraph 负责 Agent 工作流编排
-- 异步任务组件负责文档入库、索引重建和批量评测
+- Web UI 独立负责聊天交互、引用展示、会话历史和调试信息展示
+- API Gateway 负责统一 REST API、鉴权、会话、反馈和对内服务转发
+- AI Orchestrator 负责 RAG、多 Agent 工作流、模型调用和检索编排
+- Ingestion Worker 负责文档入库、索引重建和批量评测等异步任务
 - 向量库和元数据库分离，便于演示检索增强与工程化设计
 
 ## 2. 总体架构
 
 ```mermaid
 flowchart LR
-    U["User / Web UI"] --> A["Python Backend (FastAPI + LangGraph)"]
+    U["User"] --> W["Web UI (React / Next.js)"]
+    W --> G["API Gateway (FastAPI)"]
 
     subgraph Offline["离线入库"]
-      S1["Docs / PDF / Markdown / Runbook / Postmortem"] --> P["Parser (Docling/Unstructured)"]
+      G --> Q["Redis Queue"]
+      Q --> IW["Ingestion Worker"]
+      S1["Docs / PDF / Markdown / Runbook / Postmortem"] --> IW
+      IW --> P["Parser (Docling/Unstructured)"]
       P --> C["Chunking + Metadata Builder"]
       C --> E["Embedding + Sparse Index Builder"]
       E --> V["Qdrant"]
@@ -25,7 +30,8 @@ flowchart LR
     end
 
     subgraph Online["在线处理"]
-      A --> R["Router Agent"]
+      G --> AO["AI Orchestrator (FastAPI + LangGraph)"]
+      AO --> R["Router Agent"]
       R --> T1["Retriever Agent"]
       R --> T2["Incident Analyst Agent"]
       R --> T3["Runbook Agent"]
@@ -34,25 +40,41 @@ flowchart LR
       T2 --> X1["Log/Alert/Ticket Tools"]
       T3 --> V
       T3 --> O
-      A --> C1["Critic Agent"]
-      C1 --> A
+      AO --> C1["Critic Agent"]
+      C1 --> AO
     end
 
-    A --> N["Answer Composer + Citation Formatter"]
-    N --> U
+    AO --> N["Answer Composer + Citation Formatter"]
+    N --> G
+    G --> W
 ```
 
 ## 3. 模块设计
 
-### 3.1 Python Backend
+### 3.1 Web UI
+
+职责：
+
+- 提供聊天入口、知识库导入入口和调试页面
+- 展示答案、引用来源、证据片段、会话历史和任务状态
+- 只通过 API Gateway 访问后端，不直接访问 AI Orchestrator 或 Worker
+
+建议技术：
+
+- React 或 Next.js
+- TypeScript
+- Tailwind CSS 或轻量组件库
+
+### 3.2 API Gateway
 
 职责：
 
 - 提供统一 REST API
 - 负责登录态、鉴权、会话管理
 - 存储用户会话、提问记录、反馈记录
-- 直接编排 AI 流程并返回前端
-- 预留与工单、告警、配置中心等系统的集成能力
+- 调用 AI Orchestrator 完成问答、故障分析和影响分析
+- 将文档导入、索引重建、批量评测等任务投递给 Worker
+- 屏蔽内部服务地址，对前端提供稳定 API 契约
 
 建议技术：
 
@@ -63,13 +85,14 @@ flowchart LR
 - Redis
 - PostgreSQL
 
-### 3.2 AI Workflow Layer
+### 3.3 AI Orchestrator
 
 职责：
 
 - 调度 RAG 工作流与多 Agent
 - 管理 Prompt、模型调用、工具调用和重试
 - 记录 tracing、token 消耗和耗时
+- 对 API Gateway 暴露内部 AI API，例如 `/internal/chat/complete`、`/internal/retrieve/debug`
 
 建议技术：
 
@@ -78,7 +101,7 @@ flowchart LR
 - LangChain 或原生 SDK 封装
 - Pydantic
 
-### 3.3 Ingestion Pipeline
+### 3.4 Ingestion Worker
 
 职责：
 
@@ -86,6 +109,8 @@ flowchart LR
 - 解析结构化文本、标题层级、表格和页面信息
 - 生成可检索 chunk 与元数据
 - 写入向量库、元数据库和对象存储
+- 执行索引重建和评测批处理任务
+- 向 API Gateway 可查询的任务表写入任务状态
 
 关键设计：
 
@@ -93,7 +118,7 @@ flowchart LR
 - 对 PDF、DOCX 尽量保留段落、表格和页码
 - 为每个 chunk 记录 parent_id、doc_id、section、source_url、updated_at
 
-### 3.4 Async Jobs
+### 3.5 Async Jobs
 
 职责：
 
@@ -106,7 +131,7 @@ flowchart LR
 - Celery 或 Arq
 - Redis 作为 broker/queue
 
-### 3.5 Retrieval Layer
+### 3.6 Retrieval Layer
 
 职责：
 
@@ -132,15 +157,17 @@ flowchart LR
 ```mermaid
 sequenceDiagram
     participant D as Data Source
-    participant A as Python Backend
+    participant G as API Gateway
+    participant W as Ingestion Worker
     participant P as Parser
     participant C as Chunker
     participant E as Embedding Service
     participant V as Vector DB
     participant M as Metadata DB
 
-    D->>A: 上传文档或触发导入
-    A->>P: 读取文档
+    D->>G: 上传文档或触发导入
+    G->>W: 投递导入任务
+    W->>P: 读取文档
     P->>C: 输出结构化文本
     C->>C: 生成 parent-child chunks
     C->>E: 发送 chunk 内容
@@ -153,12 +180,16 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant A as Python Backend
+    participant W as Web UI
+    participant G as API Gateway
+    participant A as AI Orchestrator
     participant R as Retriever Agent
     participant I as Incident Agent
     participant C as Critic Agent
 
-    U->>A: 提问
+    U->>W: 提问
+    W->>G: POST /api/chat
+    G->>A: 调用内部 AI API
     A->>A: 路由任务类型
     A->>R: 检索知识证据
     A->>I: 故障分析（按需）
@@ -166,7 +197,9 @@ sequenceDiagram
     I-->>A: 返回排查建议
     A->>C: 复核证据与结论
     C-->>A: 返回修正意见
-    A-->>U: 返回答案与引用
+    A-->>G: 返回答案与引用
+    G-->>W: 返回统一响应
+    W-->>U: 展示答案与引用
 ```
 
 ## 5. RAG 设计细节
@@ -354,16 +387,29 @@ sequenceDiagram
 
 ## 8. API 设计
 
-### 8.1 Unified Backend API
+### 8.1 Web UI 调用的公开 API
 
 - `POST /api/chat`
 - `GET /api/sessions/{id}`
 - `POST /api/feedback`
 - `POST /api/knowledge/import`
 - `POST /api/knowledge/reindex`
-- `POST /ai/retrieve/debug`
-- `POST /ai/eval/run`
-- `GET /ai/traces/{traceId}`
+- `GET /api/tasks/{taskId}`
+- `GET /api/traces/{traceId}`
+
+### 8.2 API Gateway 调用的内部 AI API
+
+- `POST /internal/chat/complete`
+- `POST /internal/retrieve/debug`
+- `POST /internal/eval/run`
+- `GET /internal/traces/{traceId}`
+
+### 8.3 Worker 任务接口
+
+- `knowledge.import`
+- `knowledge.reindex`
+- `eval.run`
+- `task.status.update`
 
 ## 9. 可观测性设计
 
@@ -421,14 +467,16 @@ sequenceDiagram
 
 本地开发建议使用 Docker Compose 启动以下服务：
 
-- backend
-- worker
+- web-ui
+- api-gateway
+- ai-orchestrator
+- ingestion-worker
 - postgres
 - redis
 - qdrant
 - minio
 
-后续可平滑迁移到云上容器平台。
+后续可平滑迁移到云上容器平台。生产化时优先独立扩缩容 AI Orchestrator 和 Ingestion Worker，API Gateway 保持轻量无状态。
 
 ## 13. 风险与权衡
 
