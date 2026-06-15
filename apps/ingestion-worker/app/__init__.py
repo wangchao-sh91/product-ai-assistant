@@ -1,0 +1,2 @@
+"""Ingestion Worker service."""
+
