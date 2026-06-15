@@ -10,7 +10,7 @@
 
 建议总周期为 4 周到 6 周。
 
-考虑到该项目主要用于个人转型和简历展示，实施上优先采用“全 Python 单后端 + 模块化目录”的方案，而不是多后端微服务拆分。这样更容易在有限时间内完成高质量交付。
+考虑到该项目主要用于个人转型和简历展示，实施上采用“前后端分离 + 后端 2 到 3 个 Python 服务”的方案。服务拆分只围绕核心职责展开，避免引入复杂服务治理，把重点放在 RAG、Agent、入库、评测和可观测性闭环上。
 
 ## 2. 阶段划分
 
@@ -33,25 +33,72 @@
 
 ```text
 product-ai-assistant/
-  backend/
-    app/
-    agents/
-    ingestion/
-    retrieval/
-    jobs/
-    evals/
-  web-ui/
+  apps/
+    web-ui/
+    api-gateway/
+    ai-orchestrator/
+    ingestion-worker/
+  packages/
+    shared/
+      python/
+      openapi/
+  infra/
+    compose.yaml
   datasets/
   docs/
   scripts/
-  docker/
+```
+
+服务边界：
+
+```text
+web-ui:
+  - 聊天页、引用展示、会话历史、导入入口、调试信息展示
+
+api-gateway:
+  - 对外 REST API、鉴权、会话、反馈、任务状态
+  - 调用 ai-orchestrator，投递 ingestion-worker 异步任务
+
+ai-orchestrator:
+  - RAG 检索编排、多 Agent 工作流、Prompt、模型调用、Tracing
+
+ingestion-worker:
+  - 文档解析、切分、Embedding、索引写入、索引重建、批量评测
+```
+
+可选简化方案：
+
+```text
+如果首版时间不足，可以先合并 api-gateway 与 ai-orchestrator，保留 ingestion-worker 独立。
+这样后端为 2 个服务，仍满足前后端分离和异步入库拆分目标。
+```
+
+原单体模块可映射为：
+
+```text
+product-ai-assistant/
+  apps/api-gateway/
+    app/
+  apps/ai-orchestrator/
+    agents/
+    retrieval/
+    evals/
+  apps/ingestion-worker/
+    ingestion/
+    jobs/
+  apps/web-ui/
+  datasets/
+  docs/
+  scripts/
+  infra/
 ```
 
 任务清单：
 
-- 创建 Python 后端与前端子目录
+- 创建前端、API Gateway、AI Orchestrator、Ingestion Worker 子目录
 - 配置 PostgreSQL、Redis、Qdrant、MinIO
-- 约定 API 契约和配置文件规范
+- 约定公开 API、内部 API、任务消息和配置文件规范
+- 明确服务间调用方式：同步问答走 HTTP，耗时入库和评测走 Redis 队列
 
 ### 阶段 1：知识库入库 MVP
 
@@ -65,6 +112,7 @@ product-ai-assistant/
 - 文档解析模块
 - Chunk 和 metadata 生成逻辑
 - 向量索引写入逻辑
+- 异步任务状态查询接口
 
 任务清单：
 
@@ -73,6 +121,8 @@ product-ai-assistant/
 - 设计 documents 和 document_chunks 表
 - 接入向量模型与 Qdrant
 - 实现重建索引脚本
+- API Gateway 提供上传与任务查询接口
+- Ingestion Worker 执行解析、切分、索引写入
 
 完成标准：
 
@@ -90,6 +140,7 @@ product-ai-assistant/
 - `/api/chat` 问答接口
 - 检索、重排、生成链路
 - 引用来源展示
+- Web UI 聊天页
 
 任务清单：
 
@@ -98,6 +149,9 @@ product-ai-assistant/
 - 增加 sparse retrieval 或 BM25
 - 接入 reranker
 - 返回答案、引用文档、证据片段
+- API Gateway 保存会话与消息
+- AI Orchestrator 负责 RAG 编排并返回结构化结果
+- Web UI 展示答案、引用和检索证据
 
 完成标准：
 
@@ -201,8 +255,8 @@ product-ai-assistant/
 ### 第 1 周
 
 - 初始化仓库
-- 搭建基础服务
-- 完成 Python 后端骨架与文档入库原型
+- 搭建 web-ui、api-gateway、ai-orchestrator、ingestion-worker 基础服务
+- 完成服务间调用契约与文档入库原型
 
 ### 第 2 周
 
@@ -234,30 +288,40 @@ product-ai-assistant/
 
 ## 5. 建议的 Monorepo 任务拆分
 
-### backend
-
-- 用户会话接口
-- 问答接口
-- 反馈接口
-- 简单鉴权
-- Agent 编排
-- ingestion pipeline
-- retriever
-- reranker
-- eval runner
-
-### worker
-
-- 文档导入异步任务
-- 索引重建任务
-- 评测批处理任务
-
 ### web-ui
 
 - 聊天页
 - 引用来源卡片
 - 会话历史
-- 调试信息展示
+- 导入任务状态
+- 检索调试信息展示
+
+### api-gateway
+
+- 用户会话接口
+- 问答接口
+- 反馈接口
+- 简单鉴权
+- 知识库导入入口
+- 任务状态接口
+- 内部服务调用封装
+
+### ai-orchestrator
+
+- Agent 编排
+- retriever
+- reranker
+- answer composer
+- tracing
+- eval runner API
+
+### ingestion-worker
+
+- 文档导入异步任务
+- 索引重建任务
+- 评测批处理任务
+- 文档解析与 chunk 生成
+- 向量库写入
 
 ### datasets
 
