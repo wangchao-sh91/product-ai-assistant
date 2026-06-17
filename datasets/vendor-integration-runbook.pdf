@@ -1,0 +1,105 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 2211 >>
+stream
+BT
+/F1 12 Tf
+50 780 Td
+14 TL
+/F1 18 Tf
+(Vendor Integration Runbook) Tj
+0 -24 Td
+/F1 11 Tf
+(Document ID: OPS-VENDOR-INTEGRATION-2026-06) Tj
+0 -14 Td
+(Classification: Internal Use Only) Tj
+0 -14 Td
+(Owner: Enterprise Platform Operations) Tj
+0 -14 Td
+0 -8 Td
+(Purpose) Tj
+0 -14 Td
+(This runbook describes the internal process for onboarding third-party vendors into) Tj
+0 -14 Td
+(the enterprise project collaboration platform. It is intended for solution architects,) Tj
+0 -14 Td
+(integration engineers, security reviewers, and service owners.) Tj
+0 -14 Td
+0 -8 Td
+(System Scope) Tj
+0 -14 Td
+(The integration platform receives vendor profile data, contract milestones,) Tj
+0 -14 Td
+(implementation tickets, and delivery status events. The first release supports REST) Tj
+0 -14 Td
+(webhooks, nightly CSV imports, and manual exception review by the operations team.) Tj
+0 -14 Td
+0 -8 Td
+(Required Vendor Fields) Tj
+0 -14 Td
+(Each vendor record must include vendor_id, legal_name, contact_email,) Tj
+0 -14 Td
+(service_category, contract_owner, risk_level, data_region, and onboarding_status. The) Tj
+0 -14 Td
+(vendor_id field is the stable business key and must not be reused after offboarding.) Tj
+0 -14 Td
+0 -8 Td
+(Security Controls) Tj
+0 -14 Td
+(All inbound API requests must use signed tokens with a maximum lifetime of 30 days.) Tj
+0 -14 Td
+(Vendors that process customer data must complete a security review before production) Tj
+0 -14 Td
+(access is enabled. Test data must be masked before it is shared outside the company) Tj
+0 -14 Td
+(network.) Tj
+0 -14 Td
+0 -8 Td
+(Operational SLA) Tj
+0 -14 Td
+(P1 integration incidents require acknowledgement within 15 minutes and mitigation) Tj
+0 -14 Td
+(within 2 hours. P2 incidents require acknowledgement within 1 hour. Daily import) Tj
+0 -14 Td
+(failures must be triaged before 10:00 local time on the next business day.) Tj
+0 -14 Td
+0 -8 Td
+(RAG Import Notes) Tj
+0 -14 Td
+(Recommended knowledge base tags are vendor, integration, security, operations, SLA,) Tj
+0 -14 Td
+(and onboarding. This PDF is intentionally formatted as an internal project document) Tj
+0 -14 Td
+(for retrieval and citation testing.) Tj
+0 -14 Td
+0 -8 Td
+(Review Date: 2026-06-16) Tj
+0 -14 Td
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000247 00000 n 
+0000000317 00000 n 
+trailer << /Size 6 /Root 1 0 R >>
+startxref
+2580
+%%EOF
