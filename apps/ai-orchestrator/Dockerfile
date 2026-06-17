@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 ENV PYTHONPATH=/app:/app/packages/shared/python
@@ -11,4 +11,3 @@ COPY apps/ai-orchestrator/app /app/app
 
 EXPOSE 8001
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
-

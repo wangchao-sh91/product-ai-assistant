@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.alembic_runner import apply_migrations
 from app.config import settings
 from app.routers import chat, health, knowledge, tasks
 
@@ -18,3 +19,8 @@ app.include_router(health.router)
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(knowledge.router, prefix="/api", tags=["knowledge"])
 app.include_router(tasks.router, prefix="/api", tags=["tasks"])
+
+
+@app.on_event("startup")
+def startup() -> None:
+    apply_migrations(settings.database_url)
