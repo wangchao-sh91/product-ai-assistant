@@ -1,7 +1,12 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 httpx==0.28.1
 psycopg[binary]==3.3.4
 pydantic==2.13.4
 pypdf==6.13.2
 qdrant-client==1.18.0
 redis==8.0.0
+torch==2.5.1+cpu
+transformers==4.46.3
+sentence-transformers==3.3.1
 sqlalchemy==2.0.50

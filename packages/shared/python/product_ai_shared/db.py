@@ -83,6 +83,29 @@ ingestion_tasks = Table(
     Column("updated_at", DateTime(timezone=True), server_default=func.now()),
 )
 
+chat_sessions = Table(
+    "chat_sessions",
+    metadata,
+    Column("id", String(length=64), primary_key=True),
+    Column("user_id", String(length=128)),
+    Column("title", String(length=512), nullable=False),
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), server_default=func.now()),
+)
+
+chat_messages = Table(
+    "chat_messages",
+    metadata,
+    Column("id", String(length=64), primary_key=True),
+    Column("session_id", String(length=64), ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False),
+    Column("role", String(length=32), nullable=False),
+    Column("content", Text, nullable=False),
+    Column("answer_type", String(length=64)),
+    Column("citations_json", JSON),
+    Column("trace_id", String(length=64)),
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+)
+
 
 def get_engine(database_url: str) -> Engine:
     return create_engine(database_url, pool_pre_ping=True)

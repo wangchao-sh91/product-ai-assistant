@@ -22,6 +22,7 @@ class ChatResponse(BaseModel):
     answer_type: str = "knowledge_qa"
     citations: list[Citation] = Field(default_factory=list)
     trace_id: str | None = None
+    session_id: str | None = None
 
 
 class TaskStatus(StrEnum):
@@ -29,4 +30,3 @@ class TaskStatus(StrEnum):
     RUNNING = "running"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
-

@@ -448,7 +448,7 @@ sequenceDiagram
 
 ### 必选
 
-- Python 3.11 + FastAPI
+- Python 3.12 + FastAPI
 - LangGraph
 - SQLAlchemy + Alembic
 - PostgreSQL
