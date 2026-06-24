@@ -18,7 +18,8 @@ body {
 
 .hero,
 .panel,
-.answer {
+.answer,
+.error {
   max-width: 880px;
 }
 
@@ -42,11 +43,12 @@ h1 {
 }
 
 .panel,
-.answer {
+.answer,
+.error {
   margin-top: 28px;
   padding: 24px;
   border: 1px solid rgba(23, 33, 27, 0.18);
-  border-radius: 24px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.62);
   box-shadow: 0 24px 80px rgba(23, 33, 27, 0.12);
 }
@@ -56,7 +58,7 @@ textarea {
   min-height: 132px;
   box-sizing: border-box;
   border: 1px solid rgba(23, 33, 27, 0.28);
-  border-radius: 18px;
+  border-radius: 8px;
   padding: 18px;
   background: #fffdf4;
   color: #17211b;
@@ -67,7 +69,7 @@ textarea {
 button {
   margin-top: 16px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 8px;
   padding: 14px 24px;
   background: #233c2a;
   color: #fff8e5;
@@ -83,8 +85,35 @@ button:disabled {
 article {
   margin-top: 12px;
   padding: 14px;
-  border-radius: 16px;
+  border-radius: 8px;
   background: #fff8e5;
+}
+
+article span {
+  display: inline-block;
+  margin-left: 12px;
+  color: #6c4b28;
+  font-size: 13px;
+}
+
+pre {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: inherit;
+  line-height: 1.55;
+}
+
+small {
+  display: block;
+  margin-top: 6px;
+  color: #4b5a4d;
+}
+
+.error {
+  border-color: rgba(142, 41, 41, 0.35);
+  color: #8e2929;
+  background: #fff4f1;
 }
 
 @media (max-width: 640px) {
@@ -92,4 +121,3 @@ article {
     padding: 24px;
   }
 }
-

@@ -34,11 +34,21 @@ services:
       APP_ENV: ${APP_ENV:-local}
       QDRANT_URL: ${QDRANT_URL}
       DATABASE_URL: ${DATABASE_URL}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-gpt-4.1-mini}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-60}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-BAAI/bge-small-zh-v1.5}
+      RERANK_MODEL: ${RERANK_MODEL:-cross-encoder/mmarco-mMiniLMv2-L12-H384-v1}
+      RERANK_ALLOW_DOWNLOAD: ${RERANK_ALLOW_DOWNLOAD:-0}
+      EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-384}
+      HF_HOME: /models/huggingface
+      HF_ENDPOINT: ${HF_ENDPOINT:-https://huggingface.co}
+      HF_HUB_DISABLE_XET: "1"
     ports:
       - "${AI_ORCHESTRATOR_PORT:-8001}:8001"
+    volumes:
+      - huggingface-cache:/models/huggingface
     depends_on:
       - postgres
       - qdrant
@@ -56,7 +66,15 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET: ${MINIO_BUCKET}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-BAAI/bge-small-zh-v1.5}
+      RERANK_MODEL: ${RERANK_MODEL:-cross-encoder/mmarco-mMiniLMv2-L12-H384-v1}
+      RERANK_ALLOW_DOWNLOAD: ${RERANK_ALLOW_DOWNLOAD:-0}
+      EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-384}
+      HF_HOME: /models/huggingface
+      HF_ENDPOINT: ${HF_ENDPOINT:-https://huggingface.co}
+      HF_HUB_DISABLE_XET: "1"
+    volumes:
+      - huggingface-cache:/models/huggingface
     depends_on:
       - postgres
       - redis
@@ -111,3 +129,4 @@ volumes:
   redis-data:
   qdrant-data:
   minio-data:
+  huggingface-cache:

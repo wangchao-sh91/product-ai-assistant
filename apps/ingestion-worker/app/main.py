@@ -183,7 +183,12 @@ def load_source(engine: Engine, job: dict) -> tuple[dict, bytes]:
 def ensure_qdrant_collection(client: QdrantClient) -> None:
     collections = client.get_collections().collections
     if any(collection.name == COLLECTION_NAME for collection in collections):
-        return
+        info = client.get_collection(collection_name=COLLECTION_NAME)
+        vectors = info.config.params.vectors
+        size = getattr(vectors, "size", None)
+        if size == EMBEDDING_DIMENSION:
+            return
+        client.delete_collection(collection_name=COLLECTION_NAME)
     client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=qdrant_models.VectorParams(
